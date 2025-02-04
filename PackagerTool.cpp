@@ -6,14 +6,10 @@
 #include <iostream>
 #include <cstdlib>  // pour system()
 
-// Fonction utilitaire pour convertir std::string en std::wstring
-std::wstring stringToWString(const std::string& str) {
-    return std::wstring(str.begin(), str.end());
-}
 void showInfos(const std::string& uprojectPath) {
     std::ifstream file(uprojectPath);
     if (!file.is_open()) {
-        std::cerr << "Impossible d'ouvrir le fichier UPROJECT." << std::endl;
+        std::cerr << "Impossible d'ouvrir le fichier UPROJECT. " << uprojectPath << std::endl;
         return;
     }
 
@@ -25,7 +21,7 @@ void showInfos(const std::string& uprojectPath) {
         std::cout << "Module Name: " << module["Name"].asString() << std::endl;
     }
     std::cout << "Version Unreal Engine : " << root["EngineAssociation"].asString() << std::endl;
-    if (root["EngineAssociation"].isNull()) {
+    if (root["EngineAssociation"].isNull() || root["EngineAssociation"].empty()) {
         std::cout << "Version UE From Source." << std::endl;
     }
 
@@ -52,7 +48,7 @@ void buildProject(const std::string& uprojectPath) {
     system (commande.c_str());
 }
 
-void PackageProject(const std::string& uprojectPath) {
+void PackageProject(const std::string& uprojectPath, std::string& packagePath) {
     std::ifstream file(uprojectPath);
     if (!file.is_open()) {
         std::cerr << "Impossible d'ouvrir le fichier UPROJECT." << std::endl;
@@ -66,7 +62,26 @@ void PackageProject(const std::string& uprojectPath) {
     for (const auto& module : root["Modules"]) {
         std::string name = module["Name"].asString();
     }
-    std::string commande = ".\\Engine\\Build\\BatchFiles\\RunUAT.bat -ScriptsForProject=" + uprojectPath+ "BuildCookRun -project=" + uprojectPath + "-noP4 -clientconfig=Development -serverconfig=Development -nocompile -nocompileeditor -installed -unrealexe=.\\Engine\\Binaries\\Win64\\UnrealEditor-Cmd.exe -utf8output -platform=Win64 -build -cook -CookCultures=fr -unversionedcookedcontent -stage -package -cmdline= -Messaging -addcmdline=-SessionId=41EACCF047A5A712277F48A0331DBD7C -SessionOwner=conja -SessionName=profileTool" ;
+    //Parsing command line: -ScriptsForProject=C:/Github/GitHub/UnrealEngine/games/TestTool/TestTool.uproject BuildCookRun -project=C:/Github/GitHub/UnrealEngine/games/TestTool/TestTool.uproject -noP4 -clientconfig=Development -serverconfig=Development -nocompileeditor -unrealexe=C:\Github\GitHub\UnrealEngine\Engine\Binaries\Win64\UnrealEditor-Cmd.exe -utf8output -platform=Win64 -build -cook -CookCultures=fr -unversionedcookedcontent -stage -package -cmdline=" -Messaging" -addcmdline="-SessionId=CA15DD8D473D27D5DCBC07AEAB9F194C -SessionOwner='conja' -SessionName='ToolProfile'   "
+    std::string commande = ".\\Engine\\Build\\BatchFiles\\RunUAT.bat"
+                           " -ScriptsForProject=" + uprojectPath + 
+                           " BuildCookRun"
+                           " -project=" + uprojectPath +
+                           " -noP4"
+                           " -clientconfig=Development"
+                           " -serverconfig=Development"
+                           " -nocompileeditor"
+                           " -unrealexe=.\\Engine\\Binaries\\Win64\\UnrealEditor-Cmd.exe" //chemin absolu : C:\\Github\\GitHub\\UnrealEngine\\Engine\\Binaries\\Win64\\UnrealEditor-Cmd.exe
+                           " -utf8output"
+                           " -platform=Win64"
+                           " -build -cook -CookCultures=fr"
+                           " -unversionedcookedcontent"
+                           " -stage -package"
+                           " -cmdline=\" -Messaging\""
+                           " -addcmdline=\"-SessionId=CA15DD8D473D27D5DCBC07AEAB9F194C\""
+                           " -SessionOwner=conja"
+                           " -SessionName=ToolProfile"
+                           " -StagingDirectory=" + packagePath;
     system (commande.c_str());
 }
 
@@ -85,7 +100,8 @@ int main(int argc, char* argv[]) {
         buildProject(uprojectPath);
     }else if (command == "package")
     {
-        PackageProject(uprojectPath);
+        std::string packagePath = argv[3];
+        PackageProject(uprojectPath, packagePath);
     }
     else {
         std::cerr << "Commande invalide." << std::endl;
